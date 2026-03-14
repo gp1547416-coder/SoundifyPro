@@ -12,166 +12,134 @@
             --text-main: #ffffff;
             --text-muted: #b3b3b3;
         }
-
         body {
             margin: 0;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-black);
             color: var(--text-main);
             display: flex;
             flex-direction: column;
             height: 100vh;
+            overflow: hidden;
         }
-
-        /* Layout */
-        .container { display: flex; flex: 1; overflow: hidden; }
-        
-        /* Sidebar (Hidden on small iOS screens for better UX) */
-        nav {
-            width: 240px;
-            background: black;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) { nav { display: none; } }
-
-        /* Main Content */
         main {
             flex: 1;
             background: linear-gradient(to bottom, #222, #121212);
-            overflow-y: auto;
             padding: 20px;
+            overflow-y: auto;
             padding-bottom: 110px;
         }
-
-        /* Search Bar */
         .search-box {
             position: sticky;
             top: 0;
-            padding: 10px 0;
             background: rgba(18,18,18,0.9);
+            padding: 10px 0;
             z-index: 10;
         }
-
         #search-input {
-            width: 100%;
+            width: 90%;
             max-width: 400px;
-            padding: 12px 25px;
+            padding: 12px 20px;
             border-radius: 50px;
             border: none;
-            background: white;
-            font-size: 14px;
             outline: none;
         }
-
-        /* Grid UI */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
             margin-top: 20px;
         }
-
         .card {
             background: var(--card-grey);
             padding: 15px;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.3s;
+            text-align: center;
         }
-
-        .card:hover { background: #282828; }
-
         .card img {
             width: 100%;
-            aspect-ratio: 1;
             border-radius: 4px;
             margin-bottom: 10px;
-            background: #333;
         }
-
-        .card-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-artist { color: var(--text-muted); font-size: 12px; }
-
-        /* Bottom Player Bar */
         footer {
             height: 90px;
             background: #181818;
             border-top: 1px solid #282828;
             display: flex;
             align-items: center;
-            padding: 0 15px;
+            padding: 0 20px;
             position: fixed;
             bottom: 0;
             width: 100%;
             box-sizing: border-box;
         }
-
-        .video-container {
-            width: 0; height: 0; overflow: hidden; position: absolute;
+        #player-container {
+            position: absolute;
+            top: -9999px; /* Hide the video off-screen */
+        }
+        .play-btn {
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <nav>
-        <div style="font-size: 22px; font-weight: bold;">Music</div>
-        <div class="text-muted">Home</div>
-        <div style="color: white; font-weight: bold;">Search</div>
-    </nav>
+<main>
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search songs..." oninput="fetchResults(this.value)">
+    </div>
+    <h2 id="view-title">Recent Music</h2>
+    <div class="grid" id="results-grid"></div>
+</main>
 
-    <main>
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder="Search for songs or artists..." oninput="fetchResults(this.value)">
-        </div>
-
-        <h2 id="title-header">Recent Music</h2>
-        <div class="grid" id="results-grid">
-            </div>
-    </main>
-</div>
-
-<div class="video-container" id="player-wrapper">
+<div id="player-container">
     <div id="player"></div>
 </div>
 
 <footer>
-    <div id="current-info" style="flex: 1;">
-        <div id="playing-title" style="font-size: 14px; font-weight: bold;">No song selected</div>
-        <div id="playing-artist" style="font-size: 12px; color: #b3b3b3;">Search to play music</div>
+    <div style="flex: 1;">
+        <div id="playing-title" style="font-size: 14px; font-weight: bold;">Select a song</div>
+        <div id="playing-artist" style="font-size: 12px; color: var(--text-muted);">Ready to play</div>
     </div>
-    <div style="flex: 1; text-align: center; font-size: 24px; cursor: pointer;" onclick="togglePlay()">
-        <span id="play-icon">▶️</span>
-    </div>
+    <button class="play-btn" onclick="togglePlay()" id="master-play">▶</button>
     <div style="flex: 1;"></div>
 </footer>
 
 <script>
-    // YouTube IFrame API Loader
+    let player;
+    let currentSearch = "";
+
+    // Load YouTube API
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-    let player;
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
-            height: '0', width: '0',
-            events: { 'onStateChange': onPlayerStateChange }
+            height: '0',
+            width: '0',
+            playerVars: { 'autoplay': 1, 'playsinline': 1 },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
         });
     }
 
-    // Real-time Fetch using Google's Suggestion API (CORS Friendly)
+    function onPlayerReady(event) {
+        console.log("Player Ready");
+    }
+
     async function fetchResults(query) {
         if (query.length < 2) return;
-        
-        document.getElementById('title-header').innerText = "Search Results";
-        
-        // We use a JSONP hack to get suggestions without CORS issues
         const script = document.createElement('script');
         script.src = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}&callback=handleSuggestions`;
         document.body.appendChild(script);
@@ -181,49 +149,54 @@
         const suggestions = data[1];
         const grid = document.getElementById('results-grid');
         grid.innerHTML = '';
-
-        suggestions.forEach((term, index) => {
+        suggestions.forEach((term, i) => {
             const card = document.createElement('div');
             card.className = 'card';
-            card.onclick = () => playSong(term);
+            card.onclick = () => selectSong(term);
             card.innerHTML = `
-                <img src="https://picsum.photos/seed/${index+term}/200" alt="Cover">
-                <div class="card-title">${term}</div>
-                <div class="card-artist">YouTube Music</div>
+                <img src="https://picsum.photos/seed/${term}/200">
+                <div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${term}</div>
             `;
             grid.appendChild(card);
         });
     }
 
-    function playSong(term) {
+    function selectSong(term) {
         document.getElementById('playing-title').innerText = term;
-        document.getElementById('playing-artist').innerText = "Playing from YouTube";
+        document.getElementById('playing-artist').innerText = "YouTube Source";
         
-        // In a real app, you'd fetch the VideoID. 
-        // For this demo, we search and play the first result.
-        // Note: For a true 1:1 play, a small backend or RapidAPI is usually needed.
-        // This will attempt to load a video based on the term.
-        player.loadVideoByUrl(`https://www.youtube.com/v/search?keyword=${encodeURIComponent(term)}`);
-        document.getElementById('play-icon').innerText = '⏸';
+        // On iOS, we must "cue" and then let the user press Play, 
+        // OR attempt to load it directly if the user has already interacted.
+        const searchQuery = encodeURIComponent(term + " song");
+        
+        // We use a trick: load a search results "playlist" and play the first video
+        player.loadPlaylist({
+            list: term,
+            listType: 'search',
+            index: 0
+        });
+        
+        document.getElementById('master-play').innerText = '⏸';
     }
 
     function togglePlay() {
         const state = player.getPlayerState();
         if (state === 1) {
             player.pauseVideo();
-            document.getElementById('play-icon').innerText = '▶️';
+            document.getElementById('master-play').innerText = '▶';
         } else {
             player.playVideo();
-            document.getElementById('play-icon').innerText = '⏸';
+            document.getElementById('master-play').innerText = '⏸';
         }
     }
 
     function onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.ENDED) {
-            document.getElementById('play-icon').innerText = '▶️';
+        if (event.data == YT.PlayerState.PLAYING) {
+            document.getElementById('master-play').innerText = '⏸';
+        } else {
+            document.getElementById('master-play').innerText = '▶';
         }
     }
 </script>
-
 </body>
 </html>
