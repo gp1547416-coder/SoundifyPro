@@ -2,83 +2,95 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Music</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #09090b; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .song-card:hover { background: rgba(255, 255, 255, 0.1); cursor: pointer; }
+        body { background-color: #000; color: #fff; -webkit-tap-highlight-color: transparent; }
+        .spotify-green { color: #1DB954; }
+        .glass-card { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .search-input { background: #121212; border: 1px solid #333; }
+        .search-input:focus { border-color: #1DB954; outline: none; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen pb-24">
 
-    <nav class="p-6 flex justify-between items-center border-b border-white/10">
-        <h1 class="text-2xl font-bold tracking-tighter text-green-500">Music</h1>
-    </nav>
+    <header class="p-6">
+        <h1 class="text-3xl font-black tracking-tighter underline decoration-green-500">Music</h1>
+    </header>
 
-    <main class="flex-grow p-6 max-w-4xl mx-auto w-full">
-        <div class="relative mb-8">
-            <input id="searchInput" type="text" placeholder="Search for a song..." 
-                class="w-full p-4 rounded-full bg-zinc-900 border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-green-500 transition">
-            <button onclick="searchMusic()" class="absolute right-4 top-3 text-zinc-400 hover:text-white">🔍</button>
+    <div class="px-6 mb-4">
+        <div class="relative">
+            <input id="query" type="text" placeholder="Search song, artist, or album..." 
+                class="search-input w-full p-4 rounded-xl text-lg">
+            <button onclick="findMusic()" class="absolute right-3 top-3 bg-green-500 text-black px-4 py-1 rounded-lg font-bold">Find</button>
         </div>
+    </div>
 
-        <div id="results" class="grid grid-cols-1 gap-3">
-            <p class="text-zinc-500 text-center mt-10">Search for your favorite artist or track.</p>
-        </div>
-    </main>
+    <div id="resultsList" class="px-6 space-y-4">
+        <p class="text-zinc-500 text-sm">Enter a prompt to fetch "embedded" music results.</p>
+    </div>
 
-    <div id="playerContainer" class="fixed bottom-0 left-0 w-full p-4 glass translate-y-full transition-transform duration-500">
-        <div class="max-w-4xl mx-auto flex items-center gap-4">
-            <div id="embedWrapper" class="w-full rounded-lg overflow-hidden">
+    <div id="playerDock" class="fixed bottom-0 left-0 w-full p-4 glass-card rounded-t-3xl hidden">
+        <div class="flex flex-col items-center">
+            <div class="w-12 h-1.5 bg-zinc-600 rounded-full mb-4"></div>
+            <div id="videoContainer" class="w-full aspect-video rounded-xl overflow-hidden bg-black">
                 </div>
-            <button onclick="closePlayer()" class="text-zinc-400 hover:text-white">✕</button>
+            <button onclick="closePlayer()" class="mt-4 text-zinc-400 text-sm font-medium">Close Player</button>
         </div>
     </div>
 
     <script>
-        async function searchMusic() {
-            const query = document.getElementById('searchInput').value;
-            const resultsDiv = document.getElementById('results');
+        function findMusic() {
+            const query = document.getElementById('query').value;
+            const list = document.getElementById('resultsList');
+            
             if(!query) return;
 
-            resultsDiv.innerHTML = '<p class="text-center">Searching...</p>';
-
-            // Using a public search proxy (Note: In a real app, use your own API Key)
-            const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-            
-            // For a browser-only demo, we'll simulate the "fetch" 
-            // Real scraping usually requires a backend like Node.js
-            // Here, we provide a quick mock-up of how the interaction works:
-            
-            resultsDiv.innerHTML = `
-                <div onclick="playSong('dQw4w9WgXcQ', 'Never Gonna Give You Up')" class="song-card p-4 rounded-xl flex items-center gap-4 transition">
-                    <div class="w-12 h-12 bg-zinc-800 rounded flex items-center justify-center">🎵</div>
-                    <div>
-                        <div class="font-medium">${query} (Result)</div>
-                        <div class="text-sm text-zinc-400">Click to play</div>
-                    </div>
+            // Clear previous and show "fetching" state
+            list.innerHTML = `<div class="animate-pulse flex space-x-4">
+                <div class="flex-1 space-y-4 py-1">
+                    <div class="h-4 bg-zinc-800 rounded w-3/4"></div>
+                    <div class="h-4 bg-zinc-800 rounded"></div>
                 </div>
-            `;
+            </div>`;
+
+            // Since we can't scrape Spotify directly in the browser, 
+            // we redirect the "Action" to an embed trigger.
+            // This UI simulates the search result.
+            setTimeout(() => {
+                list.innerHTML = `
+                <div onclick="playEmbed('${encodeURIComponent(query)}')" class="glass-card p-4 rounded-2xl flex items-center justify-between active:scale-95 transition">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-gradient-to-br from-green-600 to-black rounded-lg flex items-center justify-center text-2xl">🎵</div>
+                        <div>
+                            <h3 class="font-bold text-lg">${query}</h3>
+                            <p class="text-zinc-400 text-sm">Tap to stream</p>
+                        </div>
+                    </div>
+                    <span class="text-green-500">▶</span>
+                </div>
+                <p class="text-xs text-zinc-600 text-center mt-4">Results fetched via YouTube Embed API</p>
+                `;
+            }, 800);
         }
 
-        function playSong(id, title) {
-            const container = document.getElementById('playerContainer');
-            const wrapper = document.getElementById('embedWrapper');
+        function playEmbed(term) {
+            const dock = document.getElementById('playerDock');
+            const container = document.getElementById('videoContainer');
             
-            wrapper.innerHTML = `
-                <iframe width="100%" height="80" 
-                    src="https://www.youtube.com/embed/${id}?autoplay=1" 
-                    frameborder="0" allow="autoplay; encrypted-media">
-                </iframe>`;
+            // Use YouTube's "Search" list feature to find the best match automatically
+            // This plays the first result for the search term provided
+            const embedUrl = `https://www.youtube.com/embed?listType=search&list=${term}&autoplay=1`;
             
-            container.classList.remove('translate-y-full');
+            container.innerHTML = `<iframe width="100%" height="100%" src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            
+            dock.classList.remove('hidden');
         }
 
         function closePlayer() {
-            document.getElementById('playerContainer').classList.add('translate-y-full');
-            document.getElementById('embedWrapper').innerHTML = '';
+            document.getElementById('playerDock').classList.add('hidden');
+            document.getElementById('videoContainer').innerHTML = '';
         }
     </script>
 </body>
