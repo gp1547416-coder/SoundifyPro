@@ -2,200 +2,181 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Music</title>
     <style>
         :root {
-            --bg-black: #000000;
-            --card-grey: #181818;
             --spotify-green: #1DB954;
-            --text-main: #ffffff;
-            --text-muted: #b3b3b3;
+            --bg: #000000;
+            --surface: #121212;
+            --card: #181818;
         }
         body {
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-black);
-            color: var(--text-main);
+            font-family: -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: white;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
         }
         main {
             flex: 1;
-            background: linear-gradient(to bottom, #222, #121212);
             padding: 20px;
             overflow-y: auto;
-            padding-bottom: 110px;
+            background: linear-gradient(0deg, var(--bg) 70%, #222 100%);
         }
-        .search-box {
+        .search-bar {
             position: sticky;
             top: 0;
-            background: rgba(18,18,18,0.9);
+            background: rgba(0,0,0,0.8);
             padding: 10px 0;
-            z-index: 10;
+            z-index: 100;
         }
-        #search-input {
-            width: 90%;
-            max-width: 400px;
-            padding: 12px 20px;
-            border-radius: 50px;
+        input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
             border: none;
-            outline: none;
+            background: #222;
+            color: white;
+            box-sizing: border-box;
+            font-size: 16px; /* Prevents iOS zoom */
         }
+        /* The Player "Album Art" Area */
+        .now-playing-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        #player-wrapper {
+            width: 280px;
+            height: 280px;
+            background: #333;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        /* Song List Grid */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
+            grid-template-columns: 1fr;
+            gap: 10px;
             margin-top: 20px;
         }
-        .card {
-            background: var(--card-grey);
-            padding: 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-        }
-        .card img {
-            width: 100%;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        footer {
-            height: 90px;
-            background: #181818;
-            border-top: 1px solid #282828;
+        .song-row {
             display: flex;
             align-items: center;
-            padding: 0 20px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        #player-container {
-            position: absolute;
-            top: -9999px; /* Hide the video off-screen */
-        }
-        .play-btn {
-            background: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
+            padding: 10px;
+            background: var(--card);
+            border-radius: 6px;
             cursor: pointer;
+        }
+        .song-info { margin-left: 15px; }
+        .song-info div:last-child { color: #b3b3b3; font-size: 13px; }
+
+        footer {
+            height: 100px;
+            background: #121212;
+            border-top: 1px solid #282828;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-big {
+            background: var(--spotify-green);
+            color: black;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
 
 <main>
-    <div class="search-box">
-        <input type="text" id="search-input" placeholder="Search songs..." oninput="fetchResults(this.value)">
+    <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search for a song..." oninput="search(this.value)">
     </div>
-    <h2 id="view-title">Recent Music</h2>
-    <div class="grid" id="results-grid"></div>
+
+    <div class="now-playing-container">
+        <div id="player-wrapper">
+            <div id="player"></div>
+        </div>
+    </div>
+
+    <div id="status" style="text-align: center; color: var(--spotify-green); font-size: 12px; margin-bottom: 10px;">
+        Tap the video box to start audio on iOS
+    </div>
+
+    <div class="grid" id="results">
+        </div>
 </main>
 
-<div id="player-container">
-    <div id="player"></div>
-</div>
-
 <footer>
-    <div style="flex: 1;">
-        <div id="playing-title" style="font-size: 14px; font-weight: bold;">Select a song</div>
-        <div id="playing-artist" style="font-size: 12px; color: var(--text-muted);">Ready to play</div>
-    </div>
-    <button class="play-btn" onclick="togglePlay()" id="master-play">▶</button>
-    <div style="flex: 1;"></div>
+    <button class="play-big" onclick="togglePlay()">PLAY / PAUSE</button>
 </footer>
 
 <script>
     let player;
-    let currentSearch = "";
-
-    // Load YouTube API
-    var tag = document.createElement('script');
+    const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    document.head.appendChild(tag);
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
-            height: '0',
-            width: '0',
-            playerVars: { 'autoplay': 1, 'playsinline': 1 },
+            height: '280',
+            width: '280',
+            videoId: 'dQw4w9WgXcQ', // Default starter song
+            playerVars: {
+                'playsinline': 1,
+                'autoplay': 0,
+                'controls': 1
+            },
             events: {
-                'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange
+                'onReady': () => console.log("Ready")
             }
         });
     }
 
-    function onPlayerReady(event) {
-        console.log("Player Ready");
+    function search(q) {
+        if (q.length < 3) return;
+        const s = document.createElement('script');
+        s.src = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(q)}&callback=showResults`;
+        document.body.appendChild(s);
     }
 
-    async function fetchResults(query) {
-        if (query.length < 2) return;
-        const script = document.createElement('script');
-        script.src = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}&callback=handleSuggestions`;
-        document.body.appendChild(script);
-    }
-
-    function handleSuggestions(data) {
-        const suggestions = data[1];
-        const grid = document.getElementById('results-grid');
-        grid.innerHTML = '';
-        suggestions.forEach((term, i) => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.onclick = () => selectSong(term);
-            card.innerHTML = `
-                <img src="https://picsum.photos/seed/${term}/200">
-                <div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${term}</div>
-            `;
-            grid.appendChild(card);
+    function showResults(data) {
+        const results = data[1];
+        const container = document.getElementById('results');
+        container.innerHTML = '';
+        results.forEach(term => {
+            const div = document.createElement('div');
+            div.className = 'song-row';
+            div.onclick = () => playThis(term);
+            div.innerHTML = `<div class="song-info"><div>${term}</div><div>YouTube Music</div></div>`;
+            container.appendChild(div);
         });
     }
 
-    function selectSong(term) {
-        document.getElementById('playing-title').innerText = term;
-        document.getElementById('playing-artist').innerText = "YouTube Source";
-        
-        // On iOS, we must "cue" and then let the user press Play, 
-        // OR attempt to load it directly if the user has already interacted.
-        const searchQuery = encodeURIComponent(term + " song");
-        
-        // We use a trick: load a search results "playlist" and play the first video
+    function playThis(term) {
+        document.getElementById('status').innerText = "Loading: " + term;
+        // Search and play the first result
         player.loadPlaylist({
             list: term,
             listType: 'search',
             index: 0
         });
-        
-        document.getElementById('master-play').innerText = '⏸';
     }
 
     function togglePlay() {
         const state = player.getPlayerState();
-        if (state === 1) {
-            player.pauseVideo();
-            document.getElementById('master-play').innerText = '▶';
-        } else {
-            player.playVideo();
-            document.getElementById('master-play').innerText = '⏸';
-        }
-    }
-
-    function onPlayerStateChange(event) {
-        if (event.data == YT.PlayerState.PLAYING) {
-            document.getElementById('master-play').innerText = '⏸';
-        } else {
-            document.getElementById('master-play').innerText = '▶';
-        }
+        if (state == 1) player.pauseVideo();
+        else player.playVideo();
     }
 </script>
 </body>
