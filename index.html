@@ -3,142 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music</title>
+    <title>Music - Search</title>
     <style>
         :root {
-            --primary: #1DB954; /* Spotify Green */
-            --bg: #121212;
-            --surface: #1e1e1e;
-            --text: #ffffff;
+            --spotify-black: #000000;
+            --spotify-dark: #121212;
+            --spotify-grey: #181818;
+            --spotify-light: #282828;
+            --spotify-green: #1DB954;
+            --text-main: #ffffff;
+            --text-muted: #b3b3b3;
         }
+
         body {
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--spotify-black);
+            color: var(--text-main);
             display: flex;
-            justify-content: center;
-            align-items: center;
             height: 100vh;
+            overflow: hidden;
         }
-        .player-card {
-            background: var(--surface);
-            width: 90%;
-            max-width: 350px;
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            text-align: center;
+
+        /* Sidebar */
+        nav {
+            width: 240px;
+            background-color: var(--spotify-black);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        .album-art {
-            width: 200px;
-            height: 200px;
-            background: linear-gradient(45deg, #333, #444);
-            margin: 0 auto 1.5rem;
-            border-radius: 15px;
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 5rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            gap: 15px;
+            transition: 0.3s;
         }
-        h1 { font-size: 1.5rem; margin: 0.5rem 0; }
-        p { color: #b3b3b3; margin-bottom: 2rem; }
-        .controls {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
+
+        .nav-link:hover { color: white; }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            background: linear-gradient(to bottom, #222, var(--spotify-dark));
+            overflow-y: auto;
+            padding: 20px;
         }
-        button {
-            background: none;
+
+        /* Search Header */
+        .search-container {
+            margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            background: rgba(18, 18, 18, 0.8);
+            padding: 10px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        #search-input {
+            width: 300px;
+            padding: 12px 20px;
+            border-radius: 500px;
             border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: transform 0.2s;
+            outline: none;
+            font-size: 14px;
         }
-        button:active { transform: scale(0.9); }
-        .play-btn {
-            background: var(--primary);
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
+
+        /* Song Grid */
+        h2 { margin-bottom: 20px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--spotify-grey);
+            padding: 16px;
+            border-radius: 8px;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .card:hover { background: var(--spotify-light); }
+
+        .card img {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            object-fit: cover;
+        }
+
+        .card-title { font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-artist { color: var(--text-muted); font-size: 14px; }
+
+        /* Player Bar */
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 90px;
+            background: var(--spotify-grey);
+            border-top: 1px solid #282828;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: black;
-            font-size: 1.2rem;
-        }
-        #progress-container {
-            width: 100%;
-            height: 5px;
-            background: #444;
-            margin-bottom: 1.5rem;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #progress {
-            width: 0%;
-            height: 100%;
-            background: var(--primary);
-            border-radius: 5px;
+            padding: 0 20px;
+            justify-content: space-between;
         }
     </style>
 </head>
 <body>
 
-<div class="player-card">
-    <div class="album-art">🎵</div>
-    <h1 id="title">Music Player</h1>
-    <p id="artist">Sample Artist</p>
+<nav>
+    <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">Music</div>
+    <a href="#" class="nav-link">🏠 Home</a>
+    <a href="#" class="nav-link">🔍 Search</a>
+    <a href="#" class="nav-link">📚 Your Library</a>
+</nav>
 
-    <div id="progress-container">
-        <div id="progress"></div>
+<main>
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="What do you want to listen to?" onkeyup="handleSearch(event)">
     </div>
 
-    <div class="controls">
-        <button onclick="prev()">⏮</button>
-        <button class="play-btn" id="play" onclick="togglePlay()">▶</button>
-        <button onclick="next()">⏭</button>
-    </div>
-</div>
+    <h2 id="view-title">Recent Music</h2>
+    <div class="grid" id="song-grid">
+        </div>
+</main>
 
-<audio id="audio" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+<footer>
+    <div id="now-playing" style="width: 30%;">
+        <div id="current-song-title">Select a song</div>
+        <div id="current-song-artist" style="font-size: 12px; color: var(--text-muted);">...</div>
+    </div>
+    <div style="text-align: center;">
+        <span style="font-size: 30px; cursor: pointer;">⏯</span>
+    </div>
+    <div style="width: 30%;"></div>
+</footer>
 
 <script>
-    const audio = document.getElementById('audio');
-    const playBtn = document.getElementById('play');
-    const progress = document.getElementById('progress');
-    const progressContainer = document.getElementById('progress-container');
+    // Working "Recent Music" Data
+    const recentMusic = [
+        { title: "Blinding Lights", artist: "The Weeknd", img: "https://picsum.photos/seed/lights/200" },
+        { title: "Flowers", artist: "Miley Cyrus", img: "https://picsum.photos/seed/flowers/200" },
+        { title: "Stay", artist: "The Kid LAROI", img: "https://picsum.photos/seed/stay/200" },
+        { title: "As It Was", artist: "Harry Styles", img: "https://picsum.photos/seed/harry/200" },
+        { title: "Starboy", artist: "The Weeknd", img: "https://picsum.photos/seed/star/200" }
+    ];
 
-    let isPlaying = false;
-
-    function togglePlay() {
-        if (isPlaying) {
-            audio.pause();
-            playBtn.innerText = '▶';
-        } else {
-            audio.play();
-            playBtn.innerText = '⏸';
-        }
-        isPlaying = !isPlaying;
+    function renderSongs(songs) {
+        const grid = document.getElementById('song-grid');
+        grid.innerHTML = songs.map(song => `
+            <div class="card" onclick="playSong('${song.title}', '${song.artist}')">
+                <img src="${song.img}" alt="Art">
+                <div class="card-title">${song.title}</div>
+                <div class="card-artist">${song.artist}</div>
+            </div>
+        `).join('');
     }
 
-    audio.ontimeupdate = (e) => {
-        const { duration, currentTime } = e.srcElement;
-        const progressPercent = (currentTime / duration) * 100;
-        progress.style.width = `${progressPercent}%`;
-    };
+    function handleSearch(event) {
+        const query = event.target.value.toLowerCase();
+        
+        // 1. Filter local recent music
+        const filtered = recentMusic.filter(s => 
+            s.title.toLowerCase().includes(query) || 
+            s.artist.toLowerCase().includes(query)
+        );
+        renderSongs(filtered);
 
-    progressContainer.onclick = (e) => {
-        const width = progressContainer.clientWidth;
-        const clickX = e.offsetX;
-        const duration = audio.duration;
-        audio.currentTime = (clickX / width) * duration;
-    };
+        // 2. Open YouTube Music Search if Enter is pressed
+        if (event.key === "Enter" && query !== "") {
+            window.open(`https://music.youtube.com/search?q=${encodeURIComponent(query)}`, '_blank');
+        }
+    }
 
-    function next() { alert("Next Track (add more URLs to the script!)"); }
-    function prev() { alert("Previous Track"); }
+    function playSong(title, artist) {
+        document.getElementById('current-song-title').innerText = title;
+        document.getElementById('current-song-artist').innerText = artist;
+    }
+
+    // Initial Load
+    renderSongs(recentMusic);
 </script>
 
 </body>
