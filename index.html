@@ -6,37 +6,61 @@
     <title>Music</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #000; color: #fff; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #000; color: #fff; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         .spotify-green { color: #1DB954; }
-        .glass-card { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .search-input { background: #121212; border: 1px solid #333; }
-        .search-input:focus { border-color: #1DB954; outline: none; }
+        .glass-card { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .search-input { background: #1a1a1a; border: none; }
+        .search-input:focus { ring: 2px solid #1DB954; outline: none; }
+        /* iOS-style drawer animation */
+        #playerDock { transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); transform: translateY(100%); }
+        #playerDock.active { transform: translateY(0); }
     </style>
 </head>
-<body class="flex flex-col min-h-screen pb-24">
+<body class="flex flex-col min-h-screen pb-32">
 
-    <header class="p-6">
-        <h1 class="text-3xl font-black tracking-tighter underline decoration-green-500">Music</h1>
+    <header class="p-8 pb-4">
+        <h1 class="text-4xl font-black tracking-tighter">Music</h1>
     </header>
 
-    <div class="px-6 mb-4">
-        <div class="relative">
-            <input id="query" type="text" placeholder="Search song, artist, or album..." 
-                class="search-input w-full p-4 rounded-xl text-lg">
-            <button onclick="findMusic()" class="absolute right-3 top-3 bg-green-500 text-black px-4 py-1 rounded-lg font-bold">Find</button>
+    <div class="px-6 mb-8">
+        <div class="relative group">
+            <input id="query" type="text" placeholder="Search songs or artists..." 
+                class="search-input w-full p-4 pl-12 rounded-2xl text-lg">
+            <span class="absolute left-4 top-4 text-zinc-500 text-xl">🔍</span>
+            <button onclick="findMusic()" class="absolute right-2 top-2 bg-white text-black px-5 py-2 rounded-xl font-bold active:scale-90 transition">Search</button>
         </div>
     </div>
 
     <div id="resultsList" class="px-6 space-y-4">
-        <p class="text-zinc-500 text-sm">Enter a prompt to fetch "embedded" music results.</p>
+        <p class="text-zinc-400 font-semibold uppercase text-xs tracking-widest mb-2">Recommended for you</p>
+        
+        <div onclick="playEmbed('ZxVwsqQenig', 'HEAVENLY JUMPSTYLE 2.0')" class="glass-card p-4 rounded-2xl flex items-center justify-between active:scale-95 transition">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center text-3xl shadow-lg">⚡</div>
+                <div>
+                    <h3 class="font-bold text-lg leading-tight">HEAVENLY JUMPSTYLE 2.0</h3>
+                    <p class="text-zinc-400 text-sm">MusicLoudz</p>
+                </div>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                <span class="text-white text-xl ml-1">▶</span>
+            </div>
+        </div>
     </div>
 
-    <div id="playerDock" class="fixed bottom-0 left-0 w-full p-4 glass-card rounded-t-3xl hidden">
-        <div class="flex flex-col items-center">
-            <div class="w-12 h-1.5 bg-zinc-600 rounded-full mb-4"></div>
-            <div id="videoContainer" class="w-full aspect-video rounded-xl overflow-hidden bg-black">
+    <div id="playerDock" class="fixed bottom-0 left-0 w-full glass-card rounded-t-[40px] z-50 shadow-2xl">
+        <div class="p-6 flex flex-col items-center">
+            <div class="w-12 h-1.5 bg-zinc-700 rounded-full mb-6 opacity-50"></div>
+            
+            <div id="videoContainer" class="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl">
                 </div>
-            <button onclick="closePlayer()" class="mt-4 text-zinc-400 text-sm font-medium">Close Player</button>
+
+            <div class="w-full mt-6 text-center">
+                <h2 id="nowPlayingTitle" class="text-xl font-bold truncate px-4">---</h2>
+                <p class="text-zinc-500 text-sm mt-1">Playing from Embedded Player</p>
+            </div>
+
+            <button onclick="closePlayer()" class="mt-8 mb-4 w-full py-4 rounded-2xl bg-zinc-800 font-bold text-zinc-300 active:bg-zinc-700">Minimize</button>
         </div>
     </div>
 
@@ -44,53 +68,62 @@
         function findMusic() {
             const query = document.getElementById('query').value;
             const list = document.getElementById('resultsList');
-            
             if(!query) return;
 
-            // Clear previous and show "fetching" state
-            list.innerHTML = `<div class="animate-pulse flex space-x-4">
-                <div class="flex-1 space-y-4 py-1">
-                    <div class="h-4 bg-zinc-800 rounded w-3/4"></div>
-                    <div class="h-4 bg-zinc-800 rounded"></div>
-                </div>
-            </div>`;
+            // Simulated Spotify-style search result fetching
+            list.innerHTML = `<div class="p-8 text-center animate-pulse text-zinc-500">Fetching results...</div>`;
 
-            // Since we can't scrape Spotify directly in the browser, 
-            // we redirect the "Action" to an embed trigger.
-            // This UI simulates the search result.
             setTimeout(() => {
                 list.innerHTML = `
-                <div onclick="playEmbed('${encodeURIComponent(query)}')" class="glass-card p-4 rounded-2xl flex items-center justify-between active:scale-95 transition">
+                <p class="text-zinc-400 font-semibold uppercase text-xs tracking-widest mb-2">Search Results</p>
+                <div onclick="playSearch('${encodeURIComponent(query)}')" class="glass-card p-4 rounded-2xl flex items-center justify-between active:scale-95 transition mb-4">
                     <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 bg-gradient-to-br from-green-600 to-black rounded-lg flex items-center justify-center text-2xl">🎵</div>
+                        <div class="w-16 h-16 bg-zinc-800 rounded-xl flex items-center justify-center text-3xl">🎵</div>
                         <div>
                             <h3 class="font-bold text-lg">${query}</h3>
-                            <p class="text-zinc-400 text-sm">Tap to stream</p>
+                            <p class="text-zinc-400 text-sm">Tap to stream top result</p>
                         </div>
                     </div>
-                    <span class="text-green-500">▶</span>
+                    <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-900/20">
+                        <span class="text-black text-xl ml-1">▶</span>
+                    </div>
                 </div>
-                <p class="text-xs text-zinc-600 text-center mt-4">Results fetched via YouTube Embed API</p>
                 `;
-            }, 800);
+            }, 600);
         }
 
-        function playEmbed(term) {
+        function playEmbed(id, title) {
             const dock = document.getElementById('playerDock');
             const container = document.getElementById('videoContainer');
+            const titleEl = document.getElementById('nowPlayingTitle');
             
-            // Use YouTube's "Search" list feature to find the best match automatically
-            // This plays the first result for the search term provided
+            titleEl.innerText = title;
+            const embedUrl = `https://www.youtube.com/embed/${id}?autoplay=1&modestbranding=1&rel=0`;
+            
+            container.innerHTML = `<iframe width="100%" height="100%" src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            
+            dock.classList.add('active');
+        }
+
+        function playSearch(term) {
+            const dock = document.getElementById('playerDock');
+            const container = document.getElementById('videoContainer');
+            const titleEl = document.getElementById('nowPlayingTitle');
+            
+            titleEl.innerText = decodeURIComponent(term);
+            // Uses listType=search to find the most relevant track on the fly
             const embedUrl = `https://www.youtube.com/embed?listType=search&list=${term}&autoplay=1`;
             
             container.innerHTML = `<iframe width="100%" height="100%" src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
             
-            dock.classList.remove('hidden');
+            dock.classList.add('active');
         }
 
         function closePlayer() {
-            document.getElementById('playerDock').classList.add('hidden');
-            document.getElementById('videoContainer').innerHTML = '';
+            document.getElementById('playerDock').classList.remove('active');
+            // We keep the iframe playing in the background (minimized) or 
+            // you can clear it if you want the music to stop:
+            // document.getElementById('videoContainer').innerHTML = '';
         }
     </script>
 </body>
