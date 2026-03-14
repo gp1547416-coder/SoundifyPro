@@ -5,120 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Music</title>
     <style>
-        :root {
-            --spotify-green: #1DB954;
-            --bg: #000000;
-            --surface: #121212;
-            --card: #181818;
+        :root { --green: #1DB954; --bg: #000; --card: #181818; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; }
+        main { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 120px; }
+        .search-bar { position: sticky; top: 0; background: rgba(0,0,0,0.9); padding: 10px 0; z-index: 10; }
+        input { width: 100%; padding: 15px; border-radius: 30px; border: none; background: #333; color: white; font-size: 16px; outline: none; }
+        
+        #player-wrapper { 
+            width: 100%; max-width: 300px; aspect-ratio: 1; 
+            margin: 20px auto; background: #222; border-radius: 15px; 
+            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        body {
-            margin: 0;
-            font-family: -apple-system, system-ui, sans-serif;
-            background: var(--bg);
-            color: white;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        main {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background: linear-gradient(0deg, var(--bg) 70%, #222 100%);
-        }
-        .search-bar {
-            position: sticky;
-            top: 0;
-            background: rgba(0,0,0,0.8);
-            padding: 10px 0;
-            z-index: 100;
-        }
-        input {
-            width: 100%;
-            padding: 14px;
-            border-radius: 8px;
-            border: none;
-            background: #222;
-            color: white;
-            box-sizing: border-box;
-            font-size: 16px; /* Prevents iOS zoom */
-        }
-        /* The Player "Album Art" Area */
-        .now-playing-container {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-        }
-        #player-wrapper {
-            width: 280px;
-            height: 280px;
-            background: #333;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative;
-        }
-        /* Song List Grid */
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .song-row {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background: var(--card);
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .song-info { margin-left: 15px; }
-        .song-info div:last-child { color: #b3b3b3; font-size: 13px; }
 
-        footer {
-            height: 100px;
-            background: #121212;
-            border-top: 1px solid #282828;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .song-card { 
+            display: flex; align-items: center; padding: 12px; 
+            background: var(--card); margin-bottom: 8px; border-radius: 8px; 
+            border: 1px solid transparent;
         }
-        .play-big {
-            background: var(--spotify-green);
-            color: black;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 30px;
-            font-weight: bold;
-            font-size: 16px;
+        .song-card:active { border-color: var(--green); background: #222; }
+        
+        footer { 
+            position: fixed; bottom: 0; width: 100%; height: 100px; 
+            background: #121212; border-top: 1px solid #282828; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
+        .controls { font-weight: bold; color: var(--green); margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
 <main>
     <div class="search-bar">
-        <input type="text" id="search-input" placeholder="Search for a song..." oninput="search(this.value)">
+        <input type="text" id="search-input" placeholder="Search for any song..." oninput="searchSongs(this.value)">
     </div>
 
-    <div class="now-playing-container">
-        <div id="player-wrapper">
-            <div id="player"></div>
-        </div>
+    <div id="player-wrapper">
+        <div id="player"></div>
     </div>
 
-    <div id="status" style="text-align: center; color: var(--spotify-green); font-size: 12px; margin-bottom: 10px;">
-        Tap the video box to start audio on iOS
-    </div>
-
-    <div class="grid" id="results">
+    <div id="results-list">
         </div>
 </main>
 
 <footer>
-    <button class="play-big" onclick="togglePlay()">PLAY / PAUSE</button>
+    <div class="controls" id="current-status">Tap a song to load</div>
+    <div style="font-size: 12px; color: #888;">Use YouTube controls inside the box to Play</div>
 </footer>
 
 <script>
@@ -129,55 +60,49 @@
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
-            height: '280',
-            width: '280',
-            videoId: 'dQw4w9WgXcQ', // Default starter song
-            playerVars: {
-                'playsinline': 1,
-                'autoplay': 0,
-                'controls': 1
-            },
-            events: {
-                'onReady': () => console.log("Ready")
-            }
+            height: '100%',
+            width: '100%',
+            videoId: 'dQw4w9WgXcQ', // The Rickroll
+            playerVars: { 'playsinline': 1, 'controls': 1, 'modestbranding': 1 },
+            events: { 'onStateChange': (e) => { if(e.data === 1) document.getElementById('current-status').innerText = "Playing Now"; } }
         });
     }
 
-    function search(q) {
+    function searchSongs(q) {
         if (q.length < 3) return;
         const s = document.createElement('script');
-        s.src = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(q)}&callback=showResults`;
+        // Using the suggest API to get real song names
+        s.src = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(q)}&callback=renderResults`;
         document.body.appendChild(s);
     }
 
-    function showResults(data) {
-        const results = data[1];
-        const container = document.getElementById('results');
-        container.innerHTML = '';
-        results.forEach(term => {
+    function renderResults(data) {
+        const list = document.getElementById('results-list');
+        list.innerHTML = '';
+        data[1].forEach(term => {
             const div = document.createElement('div');
-            div.className = 'song-row';
-            div.onclick = () => playThis(term);
-            div.innerHTML = `<div class="song-info"><div>${term}</div><div>YouTube Music</div></div>`;
-            container.appendChild(div);
+            div.className = 'song-card';
+            div.innerHTML = `<span>🎵</span><div style="margin-left:15px">${term}</div>`;
+            div.onclick = () => changeSong(term);
+            list.appendChild(div);
         });
     }
 
-    function playThis(term) {
-        document.getElementById('status').innerText = "Loading: " + term;
-        // Search and play the first result
+    function changeSong(term) {
+        document.getElementById('current-status').innerText = "Loading: " + term;
+        
+        // This is the most reliable "Search to Play" hack for mobile browsers
+        // It tells the player: "Search for this and play the top result immediately"
         player.loadPlaylist({
             list: term,
             listType: 'search',
             index: 0
         });
-    }
 
-    function togglePlay() {
-        const state = player.getPlayerState();
-        if (state == 1) player.pauseVideo();
-        else player.playVideo();
+        // Scroll back to top so user can see/hit play on the player
+        window.scrollTo({top: 0, behavior: 'smooth'});
     }
 </script>
+
 </body>
 </html>
